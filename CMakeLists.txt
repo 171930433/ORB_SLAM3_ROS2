@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 project(orbslam3)
 
+list(APPEND CMAKE_PREFIX_PATH "/home/gsk/vcpkg/installed/x64-linux")
+
+
 # You should set the PYTHONPATH to your own python site-packages path
-set(ENV{PYTHONPATH} "/opt/ros/foxy/lib/python3.8/site-packages/")
+set(ENV{PYTHONPATH} "/opt/ros/humble/lib/python3.10/site-packages/")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
 
@@ -28,6 +31,7 @@ include_directories(
   include
   ${ORB_SLAM3_ROOT_DIR}/include
   ${ORB_SLAM3_ROOT_DIR}/include/CameraModels
+  ${ORB_SLAM3_ROOT_DIR}/Thirdparty/Sophus
 )
 
 link_directories(
