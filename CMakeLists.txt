@@ -50,6 +50,12 @@ add_executable(rgbd
 )
 ament_target_dependencies(rgbd rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
 
+add_executable(imu_rgbd
+  src/imu_rgbd/imu_rgbd.cpp
+  src/imu_rgbd/imu_rgbd-slam-node.cpp
+)
+ament_target_dependencies(imu_rgbd rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
+
 # add_executable(stereo
 #   src/stereo/stereo.cpp
 #   src/stereo/stereo-slam-node.cpp
@@ -68,6 +74,7 @@ install(TARGETS
 rgbd 
 # stereo
 # stereo-inertial
+imu_rgbd
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
