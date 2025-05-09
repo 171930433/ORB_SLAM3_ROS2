@@ -5,21 +5,32 @@
 using std::placeholders::_1;
 
 ImuRgbdSlamNode::ImuRgbdSlamNode(ORB_SLAM3::System* pSLAM)
-:   Node("ORB_SLAM3_ROS2"),
+:   Node("orbslam3_imu_rgbd"),
     m_SLAM(pSLAM)
 {
-    // RGBD subscribers
-    rgb_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), "camera/rgb");
-    depth_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), "camera/depth");
+    // 声明参数
+    this->declare_parameter("rgb_topic", "/camera/rgb/image_raw");
+    this->declare_parameter("depth_topic", "/camera/depth/image_raw");
+    this->declare_parameter("imu_topic", "/imu/data");
 
-    // IMU subscriber
-    imu_sub = this->create_subscription<ImuMsg>(
-        "imu", 1000, std::bind(&ImuRgbdSlamNode::GrabImu, this, _1));
+    std::string rgb_topic = this->get_parameter("rgb_topic").as_string();
+    std::string depth_topic = this->get_parameter("depth_topic").as_string();
+    std::string imu_topic = this->get_parameter("imu_topic").as_string();
+
+    RCLCPP_INFO(this->get_logger(), "rgb_topic: %s", rgb_topic.c_str());
+    RCLCPP_INFO(this->get_logger(), "depth_topic: %s", depth_topic.c_str());
+    RCLCPP_INFO(this->get_logger(), "imu_topic: %s", imu_topic.c_str());    
+
+    rgb_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), rgb_topic);
+    depth_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), depth_topic);
+    imu_sub = this->create_subscription<ImuMsg>(imu_topic, 1000, std::bind(&ImuRgbdSlamNode::GrabImu, this, _1));
 
     // Synchronizer
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(
         approximate_sync_policy(10), *rgb_sub, *depth_sub);
     syncApproximate->registerCallback(&ImuRgbdSlamNode::GrabRGBD, this);
+
+    RCLCPP_INFO(this->get_logger(), "init done");    
 }
 
 ImuRgbdSlamNode::~ImuRgbdSlamNode()

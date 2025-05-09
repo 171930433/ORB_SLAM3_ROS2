@@ -1,6 +1,8 @@
 # ORB_SLAM3_ROS2
 This repository is ROS2 wrapping to use ORB_SLAM3
 
+# 安装pangolin需要的依赖库
+rosdep install --from-paths src --ignore-src -r -y
 ---
 
 ## Demo Video

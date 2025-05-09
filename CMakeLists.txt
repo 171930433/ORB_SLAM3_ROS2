@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
-project(orbslam3)
+project(orbslam3_ros2)
 
-list(APPEND CMAKE_PREFIX_PATH "/home/gsk/vcpkg/installed/x64-linux")
+# list(APPEND CMAKE_PREFIX_PATH "/home/gsk/vcpkg/installed/x64-linux")
 
 
 # You should set the PYTHONPATH to your own python site-packages path
@@ -78,8 +78,8 @@ imu_rgbd
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
-#install(DIRECTORY launch config vocabulary
-#  DESTINATION share/${PROJECT_NAME}/)
+install(DIRECTORY launch config vocabulary
+ DESTINATION share/${PROJECT_NAME}/)
 
 ament_package()
 
