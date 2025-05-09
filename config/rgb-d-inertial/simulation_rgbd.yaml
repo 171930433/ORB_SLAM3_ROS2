@@ -33,7 +33,7 @@ Stereo.ThDepth: 40.0
 Stereo.b: 0.1
 
 # Depth map values factor
-RGBD.DepthMapFactor: 1000.0
+RGBD.DepthMapFactor: 1.0
 
 # Transformation from body-frame (imu) to left camera
 # IMU pose: 0.14 0.02 0.25 0 0 -1.57
