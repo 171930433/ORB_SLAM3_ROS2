@@ -9,9 +9,9 @@ ImuRgbdSlamNode::ImuRgbdSlamNode(ORB_SLAM3::System* pSLAM)
     m_SLAM(pSLAM)
 {
     // 声明参数
-    this->declare_parameter("rgb_topic", "/camera/rgb/image_raw");
-    this->declare_parameter("depth_topic", "/camera/depth/image_raw");
-    this->declare_parameter("imu_topic", "/imu/data");
+    this->declare_parameter("rgb_topic", "/world/world_demo/model/tugbot/link/camera_front/sensor/color/image");
+    this->declare_parameter("depth_topic", "/world/world_demo/model/tugbot/link/camera_front/sensor/depth/depth_image");
+    this->declare_parameter("imu_topic", "/world/world_demo/model/tugbot/link/imu_link/sensor/imu/imu");
 
     std::string rgb_topic = this->get_parameter("rgb_topic").as_string();
     std::string depth_topic = this->get_parameter("depth_topic").as_string();
@@ -19,22 +19,21 @@ ImuRgbdSlamNode::ImuRgbdSlamNode(ORB_SLAM3::System* pSLAM)
 
     RCLCPP_INFO(this->get_logger(), "rgb_topic: %s", rgb_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "depth_topic: %s", depth_topic.c_str());
-    RCLCPP_INFO(this->get_logger(), "imu_topic: %s", imu_topic.c_str());    
+    RCLCPP_INFO(this->get_logger(), "imu_topic: %s", imu_topic.c_str());
 
-    rgb_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), rgb_topic);
-    depth_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), depth_topic);
+    rgb_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(this, rgb_topic);
+    depth_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(this, depth_topic);
     imu_sub = this->create_subscription<ImuMsg>(imu_topic, 1000, std::bind(&ImuRgbdSlamNode::GrabImu, this, _1));
-
     // Synchronizer
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(
         approximate_sync_policy(10), *rgb_sub, *depth_sub);
     syncApproximate->registerCallback(&ImuRgbdSlamNode::GrabRGBD, this);
-
-    RCLCPP_INFO(this->get_logger(), "init done");    
 }
 
 ImuRgbdSlamNode::~ImuRgbdSlamNode()
 {
+    RCLCPP_INFO(this->get_logger(), "~ImuRgbdSlamNode done");
+
     // Stop all threads
     m_SLAM->Shutdown();
 

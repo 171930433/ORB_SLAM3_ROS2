@@ -44,11 +44,11 @@ link_directories(
 # )
 # ament_target_dependencies(mono rclcpp sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
-add_executable(rgbd
-  src/rgbd/rgbd.cpp
-  src/rgbd/rgbd-slam-node.cpp
-)
-ament_target_dependencies(rgbd rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
+# add_executable(rgbd
+#   src/rgbd/rgbd.cpp
+#   src/rgbd/rgbd-slam-node.cpp
+# )
+# ament_target_dependencies(rgbd rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
 
 add_executable(imu_rgbd
   src/imu_rgbd/imu_rgbd.cpp
@@ -71,7 +71,7 @@ ament_target_dependencies(imu_rgbd rclcpp sensor_msgs cv_bridge message_filters 
 
 install(TARGETS 
 # mono 
-rgbd 
+# rgbd 
 # stereo
 # stereo-inertial
 imu_rgbd
