@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(orbslam3_ros2)
 
-# list(APPEND CMAKE_PREFIX_PATH "/home/gsk/vcpkg/installed/x64-linux")
-
-
 # You should set the PYTHONPATH to your own python site-packages path
 set(ENV{PYTHONPATH} "/opt/ros/humble/lib/python3.10/site-packages/")
 
@@ -23,20 +20,21 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(message_filters REQUIRED)
-find_package(Sophus REQUIRED)
+# find_package(Sophus REQUIRED)
 find_package(Pangolin REQUIRED)
-find_package(ORB_SLAM3 REQUIRED)
+find_package(orb_slam3 REQUIRED)
+find_package(Boost REQUIRED COMPONENTS serialization)
 
 include_directories(
   include
-  ${ORB_SLAM3_ROOT_DIR}/include
-  ${ORB_SLAM3_ROOT_DIR}/include/CameraModels
-  ${ORB_SLAM3_ROOT_DIR}/Thirdparty/Sophus
+  # ${ORB_SLAM3_ROOT_DIR}/include
+  # ${ORB_SLAM3_ROOT_DIR}/include/CameraModels
+  # ${ORB_SLAM3_ROOT_DIR}/Thirdparty/Sophus
 )
 
-link_directories(
-  include
-)
+# link_directories(
+#   include
+# )
 
 # add_executable(mono
 #   src/monocular/mono.cpp
@@ -54,7 +52,8 @@ add_executable(imu_rgbd
   src/imu_rgbd/imu_rgbd.cpp
   src/imu_rgbd/imu_rgbd-slam-node.cpp
 )
-ament_target_dependencies(imu_rgbd rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
+target_link_libraries(imu_rgbd orb_slam3::orb_slam3)
+ament_target_dependencies(imu_rgbd rclcpp sensor_msgs cv_bridge message_filters Pangolin)
 
 # add_executable(stereo
 #   src/stereo/stereo.cpp
