@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(orbslam3_ros2)
 
 # You should set the PYTHONPATH to your own python site-packages path
@@ -20,16 +20,21 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(message_filters REQUIRED)
-# find_package(Sophus REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(octomap_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(PCL REQUIRED)
+find_package(octomap REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(orb_slam3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS serialization)
 
 include_directories(
   include
-  # ${ORB_SLAM3_ROOT_DIR}/include
-  # ${ORB_SLAM3_ROOT_DIR}/include/CameraModels
-  # ${ORB_SLAM3_ROOT_DIR}/Thirdparty/Sophus
+  ${PCL_INCLUDE_DIRS}
+  ${octomap_INCLUDE_DIRS}
 )
 
 # link_directories(
@@ -52,8 +57,19 @@ add_executable(imu_rgbd
   src/imu_rgbd/imu_rgbd.cpp
   src/imu_rgbd/imu_rgbd-slam-node.cpp
 )
-target_link_libraries(imu_rgbd orb_slam3::orb_slam3)
-ament_target_dependencies(imu_rgbd rclcpp sensor_msgs cv_bridge message_filters Pangolin)
+target_link_libraries(imu_rgbd
+orb_slam3::orb_slam3
+)
+ament_target_dependencies(imu_rgbd 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge 
+  message_filters 
+  tf2_ros
+  tf2_eigen
+  nav_msgs
+  Pangolin
+)
 
 # add_executable(stereo
 #   src/stereo/stereo.cpp
@@ -68,12 +84,33 @@ ament_target_dependencies(imu_rgbd rclcpp sensor_msgs cv_bridge message_filters 
 # )
 # ament_target_dependencies(stereo-inertial rclcpp sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
+add_executable(octomap_reconstruction_node 
+  src/octomap/octomap_reconstruction_node.cpp
+)
+
+ament_target_dependencies(octomap_reconstruction_node
+  rclcpp
+  sensor_msgs
+  cv_bridge
+  pcl_ros
+  octomap_msgs
+  tf2_ros
+  message_filters
+  nav_msgs
+)
+
+target_link_libraries(octomap_reconstruction_node
+  ${PCL_LIBRARIES}
+  ${octomap_LIBRARIES}
+)
+
 install(TARGETS 
 # mono 
 # rgbd 
 # stereo
 # stereo-inertial
 imu_rgbd
+octomap_reconstruction_node
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.

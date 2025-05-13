@@ -9,6 +9,11 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/core.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include "orb_slam3/System.h"
 #include "utility.hpp"
 
@@ -24,6 +29,7 @@ public:
 private:
     void GrabRGBD(const ImageMsg::SharedPtr msgRGB, const ImageMsg::SharedPtr msgD);
     void GrabImu(const ImuMsg::SharedPtr msg);
+    void PublishTF(const Sophus::SE3f& Twc, const rclcpp::Time& stamp);
 
     ORB_SLAM3::System* m_SLAM;
     
@@ -31,6 +37,13 @@ private:
     std::shared_ptr<message_filters::Subscriber<ImageMsg>> rgb_sub;
     std::shared_ptr<message_filters::Subscriber<ImageMsg>> depth_sub;
     rclcpp::Subscription<ImuMsg>::SharedPtr imu_sub;
+
+    // Publishers
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    nav_msgs::msg::Path path_msg_;
+
+    // TF Broadcaster
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     // Synchronizer
     typedef message_filters::sync_policies::ApproximateTime<ImageMsg, ImageMsg> approximate_sync_policy;

@@ -24,6 +24,14 @@ ImuRgbdSlamNode::ImuRgbdSlamNode(ORB_SLAM3::System* pSLAM)
     rgb_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(this, rgb_topic);
     depth_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(this, depth_topic);
     imu_sub = this->create_subscription<ImuMsg>(imu_topic, 1000, std::bind(&ImuRgbdSlamNode::GrabImu, this, _1));
+    
+    // 初始化TF发布器
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+
+    // 初始化轨迹发布器
+    path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/orbslam3/trajectory", 10);
+    path_msg_.header.frame_id = "/world/world_demo";
+
     // Synchronizer
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(
         approximate_sync_policy(10), *rgb_sub, *depth_sub);
@@ -51,6 +59,37 @@ void ImuRgbdSlamNode::GrabImu(const ImuMsg::SharedPtr msg)
                                             msg->angular_velocity.y,
                                             msg->angular_velocity.z,
                                             Utility::StampToSec(msg->header.stamp)));
+}
+
+void ImuRgbdSlamNode::PublishTF(const Sophus::SE3f& Twc, const rclcpp::Time& stamp)
+{
+    if(Twc.matrix().isZero())
+        return;
+
+    geometry_msgs::msg::TransformStamped transform;
+    transform.header.stamp = stamp;
+    transform.header.frame_id = "/world/world_demo";
+    transform.child_frame_id = "/model/tugbot/link/camera_front";
+
+    // 将Sophus::SE3f转换为Eigen::Isometry3d
+    Eigen::Isometry3d T_eigen (Twc.cast<double>().matrix());
+    // 转换为ROS消息
+    transform.transform = tf2::eigenToTransform(T_eigen).transform;
+
+    // 发布TF
+    tf_broadcaster_->sendTransform(transform);
+
+    // 发布轨迹
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header = transform.header;
+    pose.pose.position.x = transform.transform.translation.x;
+    pose.pose.position.y = transform.transform.translation.y;
+    pose.pose.position.z = transform.transform.translation.z;
+    pose.pose.orientation = transform.transform.rotation;
+
+    path_msg_.header.stamp = stamp;
+    path_msg_.poses.push_back(pose);
+    path_pub_->publish(path_msg_);
 }
 
 void ImuRgbdSlamNode::GrabRGBD(const ImageMsg::SharedPtr msgRGB, const ImageMsg::SharedPtr msgD)
@@ -85,5 +124,9 @@ void ImuRgbdSlamNode::GrabRGBD(const ImageMsg::SharedPtr msgRGB, const ImageMsg:
         this->vImuMeas.clear();
     }
 
-    m_SLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, Utility::StampToSec(msgRGB->header.stamp), vImuMeas);
+    // 跟踪相机位姿
+    Sophus::SE3f Tcw = m_SLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, Utility::StampToSec(msgRGB->header.stamp), vImuMeas);
+    
+    // 发布TF
+    PublishTF(Tcw.inverse(), msgRGB->header.stamp);
 } 

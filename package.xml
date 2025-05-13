@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<package format="2">
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>orbslam3_ros2</name>
-  <version>1.0.0</version>
-  <description>ROS2 wrapper for ORB_SLAM3 library</description>
-  <maintainer email="zang09@naver.com">Haebeom Jung</maintainer>
-  <license>MIT</license>
-  <author>Haebeom Jung</author>
+  <version>0.0.1</version>
+  <description>ORB-SLAM3 ROS2 wrapper</description>
+  <maintainer email="gsk@todo.todo">gsk</maintainer>
+  <license>TODO</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -14,8 +13,12 @@
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>message_filters</depend>
-  <depend>pangolin</depend>
-  <depend>orb_slam3</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_eigen</depend>
+  <depend>nav_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
