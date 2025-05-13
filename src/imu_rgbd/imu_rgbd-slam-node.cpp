@@ -125,8 +125,13 @@ void ImuRgbdSlamNode::GrabRGBD(const ImageMsg::SharedPtr msgRGB, const ImageMsg:
     }
 
     // 跟踪相机位姿
-    Sophus::SE3f Tcw = m_SLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, Utility::StampToSec(msgRGB->header.stamp), vImuMeas);
+    Sophus::SE3f Tc_c0 = m_SLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, Utility::StampToSec(msgRGB->header.stamp), vImuMeas);
     
+    // 绕world系的X轴转-90°
+    static Sophus::SE3f Tw_c0 = Sophus::SE3f(Eigen::AngleAxisf(-M_PI/2, Eigen::Vector3f::UnitX()).toRotationMatrix(), Eigen::Vector3f::Zero());
+    Sophus::SE3f Tw_c = Tw_c0 * Tc_c0.inverse();
+
+
     // 发布TF
-    PublishTF(Tcw.inverse(), msgRGB->header.stamp);
+    PublishTF(Tw_c, msgRGB->header.stamp);
 } 
