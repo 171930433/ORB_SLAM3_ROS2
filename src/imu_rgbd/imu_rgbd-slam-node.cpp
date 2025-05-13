@@ -30,7 +30,7 @@ ImuRgbdSlamNode::ImuRgbdSlamNode(ORB_SLAM3::System* pSLAM)
 
     // 初始化轨迹发布器
     path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/orbslam3/trajectory", 10);
-    path_msg_.header.frame_id = "/world/world_demo";
+    path_msg_.header.frame_id = "world/world_demo";
 
     // Synchronizer
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(
@@ -68,8 +68,8 @@ void ImuRgbdSlamNode::PublishTF(const Sophus::SE3f& Twc, const rclcpp::Time& sta
 
     geometry_msgs::msg::TransformStamped transform;
     transform.header.stamp = stamp;
-    transform.header.frame_id = "/world/world_demo";
-    transform.child_frame_id = "/model/tugbot/link/camera_front";
+    transform.header.frame_id = "world/world_demo";
+    transform.child_frame_id = "model/tugbot/link/camera_front";
 
     // 将Sophus::SE3f转换为Eigen::Isometry3d
     Eigen::Isometry3d T_eigen (Twc.cast<double>().matrix());

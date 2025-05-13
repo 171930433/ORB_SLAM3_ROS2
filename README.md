@@ -3,7 +3,6 @@ This repository is ROS2 wrapping to use ORB_SLAM3
 
 # 安装pangolin需要的依赖库
 rosdep install --from-paths src --ignore-src -r -y
----
 
 ## Demo Video
 [![orbslam3_ros2](https://user-images.githubusercontent.com/31432135/220839530-786b8a28-d5af-4aa5-b4ed-6234c2f4ca33.PNG)](https://www.youtube.com/watch?v=zXeXL8q72lM)
@@ -114,3 +113,65 @@ ros2 run orbslam3 stereo-inertial PATH_TO_VOCABULARY PATH_TO_YAML_CONFIG_FILE BO
 ## Acknowledgments
 This repository is modified from [this](https://github.com/curryc/ros2_orbslam3) repository.  
 To add `stereo-inertial` mode and improve build difficulites.
+
+## 依赖库
+
+### 基础依赖
+- ROS2 Humble
+- OpenCV
+- Eigen3
+- Pangolin
+- ORB-SLAM3
+
+### OctoMap相关依赖
+```bash
+# 安装OctoMap核心库
+sudo apt-get install ros-humble-octomap
+
+# 安装OctoMap ROS2接口
+sudo apt-get install ros-humble-octomap-ros
+sudo apt-get install ros-humble-octomap-msgs
+sudo apt-get install ros-humble-octomap-rviz-plugins
+
+# 安装PCL点云库（用于点云处理）
+sudo apt-get install ros-humble-pcl-ros
+sudo apt-get install ros-humble-pcl-conversions
+
+# 安装TF2相关库
+sudo apt-get install ros-humble-tf2-ros
+sudo apt-get install ros-humble-tf2-eigen
+```
+
+## 编译
+```bash
+# 创建工作空间
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+
+# 克隆代码
+git clone https://github.com/your-repo/orbslam3_ros2.git
+
+# 安装依赖
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+
+# 编译
+colcon build --packages-select orbslam3_ros2
+```
+
+## 运行
+```bash
+# 启动SLAM和OctoMap重建
+ros2 launch orbslam3_ros2 imu_rgbd_slam.launch
+```
+
+## RViz2配置
+在RViz2中添加以下显示：
+1. TF显示，查看相机位姿
+2. OctoMap显示，查看重建的地图
+3. PointCloud2显示，查看实时点云
+
+OctoMap显示设置：
+- Topic: `/octomap`
+- Color Scheme: Color
+- Alpha: 0.5

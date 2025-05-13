@@ -12,10 +12,10 @@
 #include <opencv2/opencv.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
-#include <tf2_eigen/tf2_eigen.hpp>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <Eigen/Dense>
 
 using namespace std::chrono_literals;
@@ -82,7 +82,7 @@ private:
         try
         {
             // 获取相机内参
-            double fx = 615.9603271484375;  // 从配置文件中获取
+            double fx = 615.9603271484375;
             double fy = 616.227294921875;
             double cx = 419.83026123046875;
             double cy = 245.1431427001953;
@@ -91,18 +91,11 @@ private:
             cv_bridge::CvImageConstPtr rgb_ptr = cv_bridge::toCvShare(rgb_msg);
             cv_bridge::CvImageConstPtr depth_ptr = cv_bridge::toCvShare(depth_msg);
 
-            // 创建点云
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-            cloud->width = depth_ptr->image.cols;
-            cloud->height = depth_ptr->image.rows;
-            cloud->is_dense = false;
-            cloud->points.resize(cloud->width * cloud->height);
-
             // 获取相机位姿
             geometry_msgs::msg::TransformStamped transform;
             try {
                 transform = tf_buffer_->lookupTransform(
-                    "/world/world_demo", "/model/tugbot/link/camera_front",
+                    "world/world_demo", "model/tugbot/link/camera_front",
                     tf2::TimePointZero);
             } catch (const tf2::TransformException & ex) {
                 RCLCPP_WARN(this->get_logger(), "Could not transform: %s", ex.what());
@@ -112,15 +105,31 @@ private:
             // 构建变换矩阵
             Eigen::Isometry3d Twc = tf2::transformToEigen(transform);
 
-            // 转换深度图像到点云
+            // 创建点云
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+            cloud->width = depth_ptr->image.cols;
+            cloud->height = depth_ptr->image.rows;
+            cloud->is_dense = false;
+            cloud->points.resize(cloud->width * cloud->height);
+
+            // 转换深度图像到点云（直接转换到世界坐标系）
             for (int v = 0; v < depth_ptr->image.rows; v++) {
                 for (int u = 0; u < depth_ptr->image.cols; u++) {
                     float depth = depth_ptr->image.at<float>(v, u);
                     if (depth > min_depth_ && depth < max_depth_) {
+                        // 相机坐标系下的点
+                        Eigen::Vector3d p_camera(
+                            (u - cx) * depth / fx,
+                            (v - cy) * depth / fy,
+                            depth
+                        );
+                        // 转换到世界坐标系
+                        Eigen::Vector3d p_world = Twc * p_camera;
+
                         pcl::PointXYZRGB& point = cloud->points[v * depth_ptr->image.cols + u];
-                        point.x = (u - cx) * depth / fx;
-                        point.y = (v - cy) * depth / fy;
-                        point.z = depth;
+                        point.x = p_world.x();
+                        point.y = p_world.y();
+                        point.z = p_world.z();
                         point.r = rgb_ptr->image.at<cv::Vec3b>(v, u)[0];
                         point.g = rgb_ptr->image.at<cv::Vec3b>(v, u)[1];
                         point.b = rgb_ptr->image.at<cv::Vec3b>(v, u)[2];
@@ -132,13 +141,13 @@ private:
             sensor_msgs::msg::PointCloud2 cloud_msg;
             pcl::toROSMsg(*cloud, cloud_msg);
             cloud_msg.header = rgb_msg->header;
+            cloud_msg.header.frame_id = "world/world_demo";
             cloud_pub_->publish(cloud_msg);
 
             // 更新OctoMap
             for (const auto& point : cloud->points) {
                 if (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) {
-                    Eigen::Vector3d p_world = Twc * Eigen::Vector3d(point.x, point.y, point.z);
-                    octree_->updateNode(octomap::point3d(p_world.x(), p_world.y(), p_world.z()), true);
+                    octree_->updateNode(octomap::point3d(point.x, point.y, point.z), true);
                 }
             }
 
@@ -146,7 +155,7 @@ private:
             octomap_msgs::msg::Octomap octomap_msg;
             octomap_msgs::binaryMapToMsg(*octree_, octomap_msg);
             octomap_msg.header = rgb_msg->header;
-            octomap_msg.header.frame_id = "/world/world_demo";
+            octomap_msg.header.frame_id = "world/world_demo";
             octomap_pub_->publish(octomap_msg);
 
         }
