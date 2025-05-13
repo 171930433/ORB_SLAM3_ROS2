@@ -26,7 +26,7 @@ public:
     OctomapReconstructionNode() : Node("octomap_reconstruction_node")
     {
         // 声明参数
-        this->declare_parameter("octomap_resolution", 0.05);
+        this->declare_parameter("octomap_resolution", 0.25);
         this->declare_parameter("max_depth", 10.0);
         this->declare_parameter("min_depth", 0.1);
         this->declare_parameter("prob_hit", 0.7);
@@ -75,6 +75,20 @@ public:
         RCLCPP_INFO(this->get_logger(), "Octomap reconstruction node initialized");
     }
 
+    ~OctomapReconstructionNode()
+    {
+        // 保存octree到文件
+        std::string filename = "octomap_" + std::to_string(this->now().nanoseconds()) + ".bt";
+        if(octree_->writeBinary(filename))
+        {
+            RCLCPP_INFO(this->get_logger(), "Octomap saved to %s", filename.c_str());
+        }
+        else
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to save octomap to %s", filename.c_str());
+        }
+    }
+
 private:
     void rgbd_callback(const sensor_msgs::msg::Image::SharedPtr rgb_msg,
                       const sensor_msgs::msg::Image::SharedPtr depth_msg)
@@ -96,7 +110,7 @@ private:
             try {
                 transform = tf_buffer_->lookupTransform(
                     "world/world_demo", "model/tugbot/link/camera_front",
-                    tf2::TimePointZero);
+                    rgb_msg->header.stamp, tf2::durationFromSec(0.2));
             } catch (const tf2::TransformException & ex) {
                 RCLCPP_WARN(this->get_logger(), "Could not transform: %s", ex.what());
                 return;
