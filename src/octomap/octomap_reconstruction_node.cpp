@@ -12,9 +12,11 @@
 #include <opencv2/opencv.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <Eigen/Dense>
 
 using namespace std::chrono_literals;
 
@@ -43,9 +45,9 @@ public:
 
         // 创建订阅者
         rgb_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(
-            this, "camera/rgb");
+            this, "/world/world_demo/model/tugbot/link/camera_front/sensor/color/image");
         depth_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(
-            this, "camera/depth");
+            this, "/world/world_demo/model/tugbot/link/camera_front/sensor/depth/depth_image");
 
         // 创建同步器
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image> sync_policy;
@@ -56,8 +58,8 @@ public:
         sync_->registerCallback(&OctomapReconstructionNode::rgbd_callback, this);
 
         // 创建发布者
-        octomap_pub_ = this->create_publisher<octomap_msgs::msg::Octomap>("octomap", 10);
-        cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("pointcloud", 10);
+        octomap_pub_ = this->create_publisher<octomap_msgs::msg::Octomap>("/octomap", 10);
+        cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/pointcloud", 10);
 
         // 创建TF监听器
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -100,18 +102,21 @@ private:
             geometry_msgs::msg::TransformStamped transform;
             try {
                 transform = tf_buffer_->lookupTransform(
-                    "map", "camera_link",
+                    "/world/world_demo", "/model/tugbot/link/camera_front",
                     tf2::TimePointZero);
             } catch (const tf2::TransformException & ex) {
                 RCLCPP_WARN(this->get_logger(), "Could not transform: %s", ex.what());
                 return;
             }
 
+            // 构建变换矩阵
+            Eigen::Isometry3d Twc = tf2::transformToEigen(transform);
+
             // 转换深度图像到点云
             for (int v = 0; v < depth_ptr->image.rows; v++) {
                 for (int u = 0; u < depth_ptr->image.cols; u++) {
                     float depth = depth_ptr->image.at<float>(v, u);
-                    if (depth > min_depth_ && depth < max_depth_) {  // 使用参数化的深度范围
+                    if (depth > min_depth_ && depth < max_depth_) {
                         pcl::PointXYZRGB& point = cloud->points[v * depth_ptr->image.cols + u];
                         point.x = (u - cx) * depth / fx;
                         point.y = (v - cy) * depth / fy;
@@ -132,8 +137,8 @@ private:
             // 更新OctoMap
             for (const auto& point : cloud->points) {
                 if (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) {
-                    octomap::point3d endpoint(point.x, point.y, point.z);
-                    octree_->updateNode(endpoint, true);
+                    Eigen::Vector3d p_world = Twc * Eigen::Vector3d(point.x, point.y, point.z);
+                    octree_->updateNode(octomap::point3d(p_world.x(), p_world.y(), p_world.z()), true);
                 }
             }
 
@@ -141,6 +146,7 @@ private:
             octomap_msgs::msg::Octomap octomap_msg;
             octomap_msgs::binaryMapToMsg(*octree_, octomap_msg);
             octomap_msg.header = rgb_msg->header;
+            octomap_msg.header.frame_id = "/world/world_demo";
             octomap_pub_->publish(octomap_msg);
 
         }

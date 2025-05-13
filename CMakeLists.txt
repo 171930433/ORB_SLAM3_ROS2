@@ -97,6 +97,7 @@ ament_target_dependencies(octomap_reconstruction_node
   tf2_ros
   message_filters
   nav_msgs
+  tf2_eigen
 )
 
 target_link_libraries(octomap_reconstruction_node
