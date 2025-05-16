@@ -30,6 +30,7 @@ find_package(octomap REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(orb_slam3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS serialization)
+find_package(Sophus REQUIRED)
 
 include_directories(
   include

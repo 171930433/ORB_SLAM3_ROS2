@@ -43,7 +43,7 @@ $ colcon build --symlink-install --packages-select orbslam3
 1. If you cannot find `sophus/se3.hpp`:  
 Go to your `ORB_SLAM3_ROOT_DIR` and install sophus library.
 ```
-$ cd ~/{ORB_SLAM3_ROOT_DIR}/Thirdparty/Sophus/build
+$ cd ~/{ORB_SLAM3_ROOT_DIR}//build
 $ sudo make install
 ```
 
