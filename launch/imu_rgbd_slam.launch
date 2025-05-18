@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="rgb_topic" default="/world/world_demo/model/tugbot/link/camera_front/sensor/color/image"/>
+    <arg name="depth_topic" default="/world/world_demo/model/tugbot/link/camera_front/sensor/depth/depth_image"/>
+    <arg name="imu_topic" default="/world/world_demo/model/tugbot/link/imu_link/sensor/imu/imu"/>
+    <arg name="vocab_path" default="$(find-pkg-prefix orbslam3_ros2)/share/orbslam3_ros2/vocabulary/ORBvoc.txt"/>
+    <arg name="settings_path" default="$(find-pkg-prefix orbslam3_ros2)/share/orbslam3_ros2/config/rgb-d-inertial/simulation_rgbd.yaml"/>
+
+    <!-- ORB-SLAM3节点 -->
+    <node pkg="orbslam3_ros2" exec="imu_rgbd" name="orbslam3_imu_rgbd" output="screen" args="$(var vocab_path) $(var settings_path)">
+        <param name="rgb_topic" value="$(var rgb_topic)"/>
+        <param name="depth_topic" value="$(var depth_topic)"/>
+        <param name="imu_topic" value="$(var imu_topic)"/>
+    </node>
+
+    <!-- OctoMap重建节点 -->
+    <node pkg="orbslam3_ros2" exec="octomap_reconstruction_node" name="octomap_reconstruction" output="screen">
+        <param name="octomap_resolution" value="0.2"/>
+        <param name="max_depth" value="30.0"/>
+        <param name="min_depth" value="0.1"/>
+        <param name="prob_hit" value="0.7"/>
+        <param name="prob_miss" value="0.4"/>
+        <param name="clamping_thres_min" value="0.12"/>
+        <param name="clamping_thres_max" value="0.97"/>
+    </node>
+
+    <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share orbslam3_ros2)/config/rviz/loc_and_map.rviz" output="screen"/>
+
+
+</launch> 
